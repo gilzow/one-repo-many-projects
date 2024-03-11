@@ -16,4 +16,15 @@ jobs:
       matrix:
         projects: ["a-35wvtmrwghmps", "b-mtvdchuoitkcw", "c-gpng2oj2s22ey"]
     steps:
-      - run: echo "I'm evaluating ${{ matrix.projects }}"
+      - run: |
+          echo "I'm evaluating ${{ matrix.projects }}"
+          projectPattern='^([a-zA-Z]+)-([a-z0-9]+)$'
+          if [[ "${{ matrix.projects }}" =~ $projectPattern ]]; then
+            branchID="${BASH_REMATCH[1]}";
+            projID="${BASH_REMATCH[2}";
+            printf "The branch is project-%s and the project is %s.\n" "${branchID}" "${projID}"
+          else
+            echo "I couldn't parse the value to find the branch and project."
+            exit 1
+          fi
+
