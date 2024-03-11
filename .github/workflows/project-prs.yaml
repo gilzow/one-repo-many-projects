@@ -16,4 +16,4 @@ jobs:
       matrix:
         projects: ["a-35wvtmrwghmps", "b-mtvdchuoitkcw", "c-gpng2oj2s22ey"]
     steps:
-      run: echo "I'm evaluating ${{ matrix.projects }}"
+      - run: echo "I'm evaluating ${{ matrix.projects }}"
