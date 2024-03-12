@@ -87,26 +87,26 @@ jobs:
           while (( counter < ${{ env.NUM_TRIES }} )) && [[ -z "${branchReceived}" ]]; do
             sleep ${{ env.SLEEP_TIME }}
             echo "::notice::Attempt ${counter} of ${{ env.NUM_TRIES }}"
-            branchReceived=$(platform project:curl /environments | jq --arg branch "${{ github.event.number }}-${{ env.BRANCH_NAME }}" -r '.[] | select(.name | contains($branch))');
+            branchReceived=$(platform project:curl /environments | jq --arg branch "${{ env.new_branch }}" -r '.[] | select(.name | contains($branch))');
             counter=$((++counter))
           done
 
           if [[ -z "${branchReceived}" ]]; then
-            echo "::warning::It appears that Platform.sh did not receive our branch ${{ github.event.number }}-${{ env.BRANCH_NAME }}. Please look at the logs and try again."
+            echo "::warning::It appears that Platform.sh did not receive our branch ${{ env.new_branch }}. Please look at the logs and try again."
             exit 24;
           else
-            echo "::notice::Branch ${{ github.event.number }}-${{ env.BRANCH_NAME }} was successfully pushed to Platform.sh. Continuing..."
+            echo "::notice::Branch ${{ env.new_branch }} was successfully pushed to Platform.sh. Continuing..."
           fi
       - id: activate-environment
         run: |
           # If environment not active, activate it
-          if ! $(platform environments --format plain --columns title,status | grep '${{ github.event.number }}-${{ env.BRANCH_NAME }}' | grep -q Active); then
-            echo "::notice::Activating environment ${{ github.event.number }}-${{ env.BRANCH_NAME }}"
-            platform environment:activate -e "${{ github.event.number }}-${{ env.BRANCH_NAME }}"
+          if ! $(platform environments --format plain --columns title,status | grep '${{ env.new_branch }}' | grep -q Active); then
+            echo "::notice::Activating environment ${{ env.new_branch }}"
+            platform environment:activate -e "${{ env.new_branch }}"
           fi
       - id: get-pr-env-url
         run: |
-          prenvurl=$(platform url --primary --pipe --environment "${{ github.event.number }}-${{ env.BRANCH_NAME }}" )
+          prenvurl=$(platform url --primary --pipe --environment "${{ env.new_branch }}" )
           echo "pr_url=${prenvurl}" >> $GITHUB_OUTPUT
       - id: save-comment
         run: |
