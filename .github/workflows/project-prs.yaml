@@ -50,10 +50,10 @@ jobs:
           git switch -C "${{ github.event.number }}-${{ env.BRANCH_NAME }}"
       - id: merge-changes-from-pr
         run: |
-          # git fetch --all # we MIGHT need this
+          git fetch --all # we MIGHT need this
           # @todo check for merge conflict
           echo "::notice::Merging ${{ github.event.pull_request.head.sha }} into ${{ github.event.number }}-${{ env.BRANCH_NAME }}"
-          git merge "${{ github.event.pull_request.head.sha }}"
+          git merge "${{ github.head_ref }}"
       - id: push-branch-back
         run: git push --force origin "${{ github.event.number }}-${{ env.BRANCH_NAME }}"
       - id: setup-psh-cli
