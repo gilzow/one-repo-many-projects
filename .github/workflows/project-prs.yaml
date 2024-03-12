@@ -20,6 +20,8 @@ env:
 
 jobs:
   create_multi_prs:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -43,19 +45,27 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ env.BRANCH_NAME }}
+      - id: set-git-config
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+
       - id: create-pr-branch
         run: |
           echo "::notice::Creating branch ${{ github.event.number }}-${{ env.BRANCH_NAME }} from parent branch ${{ env.BRANCH_NAME }}"
           # @todo should we check to see if the branch already exists?
-          git switch -C "${{ github.event.number }}-${{ env.BRANCH_NAME }}"
+          newBranch="pr-${{ github.event.number }}-${{ env.BRANCH_NAME }}"
+          git switch -C "${newBranch}"
+          echo "new_branch=${newBranch}" >> $GITHUB_ENV
       - id: merge-changes-from-pr
         run: |
           git fetch --all # we MIGHT need this
           # @todo check for merge conflict
-          echo "::notice::Merging ${{ github.event.pull_request.head.sha }} into ${{ github.event.number }}-${{ env.BRANCH_NAME }}"
+          echo "::notice::Merging ${{ github.head_ref }} into ${{ env.new_branch }}"
           git merge "origin/${{ github.head_ref }}"
       - id: push-branch-back
-        run: git push --force origin "${{ github.event.number }}-${{ env.BRANCH_NAME }}"
+        run: git push --force origin "${{ env.new_branch }}"
+
       - id: setup-psh-cli
         run: curl -fsSL https://raw.githubusercontent.com/platformsh/cli/main/installer.sh | bash
         shell: bash
