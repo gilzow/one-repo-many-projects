@@ -1,0 +1,113 @@
+name: Child Project Pull Requests
+on:
+  pull_request:
+    branches:
+      - master
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+  workflow_dispatch:
+
+env:
+  PLATFORMSH_CLI_NO_INTERACTION: 1
+  SLEEP_TIME: 5
+  NUM_TRIES: 30
+# here's what we need to do:
+# When a PR is created
+
+jobs:
+  create_multi_prs:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        projects: ["a-35wvtmrwghmps", "b-mtvdchuoitkcw", "c-gpng2oj2s22ey"]
+    steps:
+      - id: get-branch-and-id
+        run: |
+          echo "I'm evaluating ${{ matrix.projects }}"
+          projectPattern='^([a-zA-Z]+)-([a-z0-9]+)$'
+          if [[ "${{ matrix.projects }}" =~ $projectPattern ]]; then
+            branchID="${BASH_REMATCH[1]}";
+            projID="${BASH_REMATCH[2]}";
+            printf "The branch is project-%s and the project is %s.\n" "${branchID}" "${projID}"
+            echo "PLATFORM_PROJECT_ID=${projID}" >> $GITHUB_ENV
+            echo "BRANCH_NAME=project-${branchID}" >> $GITHUB_ENV
+          else
+            echo "I couldn't parse the value to find the branch and project."
+            exit 1
+          fi
+      - id: checkout-branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH_NAME }}
+      - id: set-git-config
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+
+      - id: create-pr-branch
+        run: |
+          newBranch="pr-${{ github.event.number }}-${{ env.BRANCH_NAME }}"
+          echo "::notice::Creating branch ${newBranch} from parent branch ${{ env.BRANCH_NAME }}"
+          # @todo should we check to see if the branch already exists?
+
+          git switch -C "${newBranch}"
+          echo "new_branch=${newBranch}" >> $GITHUB_ENV
+      - id: merge-changes-from-pr
+        run: |
+          git fetch --all # we MIGHT need this
+          # @todo check for merge conflict
+          echo "::notice::Merging ${{ github.head_ref }} into ${{ env.new_branch }}"
+          git merge "origin/${{ github.head_ref }}"
+      - id: push-branch-back
+        run: git push --force origin "${{ env.new_branch }}"
+
+      - id: setup-psh-cli
+        run: curl -fsSL https://raw.githubusercontent.com/platformsh/cli/main/installer.sh | bash
+        shell: bash
+      - id: set-project
+        run: |
+          echo "::notice::Associating CLI with project: ${{ env.PLATFORM_PROJECT_ID }}"
+          platform project:set-remote "${{ env.PLATFORM_PROJECT_ID }}"
+      - id: psh-received-branch
+        run: |
+          # has platform.sh received our new branch?
+          counter=0
+          branchReceived=""
+          echo "::notice::Checking if Platform.sh has received our new branch..."
+          while (( counter < ${{ env.NUM_TRIES }} )) && [[ -z "${branchReceived}" ]]; do
+            sleep ${{ env.SLEEP_TIME }}
+            echo "::notice::Attempt ${counter} of ${{ env.NUM_TRIES }}"
+            branchReceived=$(platform project:curl /environments | jq --arg branch "${{ github.event.number }}-${{ env.BRANCH_NAME }}" -r '.[] | select(.name | contains($branch))');
+            counter=$((++counter))
+          done
+
+          if [[ -z "${branchReceived}" ]]; then
+            echo "::warning::It appears that Platform.sh did not receive our branch ${{ github.event.number }}-${{ env.BRANCH_NAME }}. Please look at the logs and try again."
+            exit 24;
+          else
+            echo "::notice::Branch ${{ github.event.number }}-${{ env.BRANCH_NAME }} was successfully pushed to Platform.sh. Continuing..."
+          fi
+      - id: activate-environment
+        run: |
+          # If environment not active, activate it
+          if ! $(platform environments --format plain --columns title,status | grep '${{ github.event.number }}-${{ env.BRANCH_NAME }}' | grep -q Active); then
+            echo "::notice::Activating environment ${{ github.event.number }}-${{ env.BRANCH_NAME }}"
+            platform environment:activate -e "${{ github.event.number }}-${{ env.BRANCH_NAME }}"
+          fi
+      - id: get-pr-env-url
+        run: |
+          prenvurl=$(platform url --primary --pipe --environment "${{ github.event.number }}-${{ env.BRANCH_NAME }}" )
+          echo "pr_url=${prenvurl}" >> $GITHUB_OUTPUT
+      - id: save-comment
+        run: |
+          msg=$(printf "The PR environment for project %s/%s is %s" "${{ env.BRANCH_NAME }}" "${{ env.PLATFORM_PROJECT_ID }}" "${{ steps.get-pr-env-url.outputs.pr_url }}")
+          gh pr comment "${{ github.event.number }}" --body "${msg}"
+
+
+
