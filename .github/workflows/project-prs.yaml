@@ -45,8 +45,6 @@ jobs:
           fi
       - id: checkout-branch
         uses: actions/checkout@v4
-        with:
-          ref: ${{ env.BRANCH_NAME }}
       - id: set-git-config
         run: |
           git config --global user.email "action@github.com"
@@ -57,15 +55,19 @@ jobs:
           newBranch="pr-${{ github.event.number }}-${{ env.BRANCH_NAME }}"
           echo "::notice::Creating branch ${newBranch} from parent branch ${{ env.BRANCH_NAME }}"
           # @todo should we check to see if the branch already exists?
-
+          git fetch --all
+          #checkout our project's branch
+          git checkout --track origin/${{ env.BRANCH_NAME }}
+          #now create a new branch based on our project's branch
           git switch -C "${newBranch}"
           echo "new_branch=${newBranch}" >> $GITHUB_ENV
       - id: merge-changes-from-pr
         run: |
-          git fetch --all # we MIGHT need this
+          #git fetch --all # we MIGHT need this
           # @todo check for merge conflict
           echo "::notice::Merging ${{ github.head_ref }} into ${{ env.new_branch }}"
-          git merge "origin/${{ github.head_ref }}"
+          # pull the merge request branch into our project PR branch
+          git pull origin "${{ github.head_ref }}"
       - id: push-branch-back
         run: git push --force origin "${{ env.new_branch }}"
 
