@@ -1,3 +1,4 @@
+<!-- ballyhoo -->
 # WordPress (Composer) for Platform.sh
 
 <p align="center">
