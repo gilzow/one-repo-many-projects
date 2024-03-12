@@ -52,9 +52,10 @@ jobs:
 
       - id: create-pr-branch
         run: |
-          echo "::notice::Creating branch ${{ github.event.number }}-${{ env.BRANCH_NAME }} from parent branch ${{ env.BRANCH_NAME }}"
-          # @todo should we check to see if the branch already exists?
           newBranch="pr-${{ github.event.number }}-${{ env.BRANCH_NAME }}"
+          echo "::notice::Creating branch ${newBranch} from parent branch ${{ env.BRANCH_NAME }}"
+          # @todo should we check to see if the branch already exists?
+
           git switch -C "${newBranch}"
           echo "new_branch=${newBranch}" >> $GITHUB_ENV
       - id: merge-changes-from-pr
