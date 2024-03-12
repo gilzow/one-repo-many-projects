@@ -22,6 +22,8 @@ jobs:
   create_multi_prs:
     permissions:
       contents: write
+    env:
+      PLATFORMSH_CLI_TOKEN: ${{ secrets.PSH_TOKEN }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
