@@ -14,4 +14,4 @@ jobs:
         run: |
           currenttime=$(date)
           msg=$(printf "The PR environment for project is %s" "${currenttime}")
-          gh pr comment 10 --body "${msg}"
+          gh pr comment 10 --body "${msg}" -R "${{ github.repository }}"
