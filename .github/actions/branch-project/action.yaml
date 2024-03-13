@@ -1,0 +1,31 @@
+name: get-branch-project
+description: Parses branch and project information from string
+inputs:
+  ident:
+    required: true
+    description: The string containing the branch ID and project ID
+outputs:
+  branch_name:
+    description: "Parsed branch name"
+    value: ${{ steps.parse.outputs.branch_name }}
+  projectid:
+    description: "Parsed project id"
+    value: ${{ steps.parse.outputs.projectid }}
+runs:
+  using: composite
+  steps:
+    - id: parse
+      shell: bash
+      run: |
+        echo "I'm evaluating ${{ inputs.ident }}"
+        projectPattern='^([a-zA-Z]+)-([a-z0-9]+)$'
+        if [[ "${{ inputs.ident }}" =~ $projectPattern ]]; then
+          branchID="${BASH_REMATCH[1]}";
+          projID="${BASH_REMATCH[2]}";
+          printf "The branch is project-%s and the project is %s.\n" "${branchID}" "${projID}"
+          echo "projectid=${projID}" >> $GITHUB_OUTPUTS
+          echo "branch_name=project-${branchID}" >> $GITHUB_OUTPUTS
+        else
+          echo "I couldn't parse the value to find the branch and project."
+          exit 1
+        fi

@@ -1,0 +1,54 @@
+name: Post PR clean-up
+on:
+  pull_request:
+    branches:
+      - master
+      - main
+    types:
+      - closed
+
+jobs:
+  clean_up:
+    permissions:
+      contents: write
+    env:
+      PLATFORMSH_CLI_TOKEN: ${{ secrets.PSH_TOKEN }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        projects: ["a-35wvtmrwghmps", "b-mtvdchuoitkcw", "c-gpng2oj2s22ey"]
+    steps:
+      - id: checkout-branch
+        uses: actions/checkout@v4
+      - id: get-branch-and-id
+        uses: ./.github/actions/branch-project
+        with:
+          ident: ${{ matrix.projects }}
+      - id: merge-branches
+        if: github.event.pull_request.merged == true
+        run: |
+          branch="project-${{ steps.get-branch-and-id.outputs.branch_name }}"
+          # @todo this identical to what we did in the other workflow. Can we use a reusable workflow here?
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          git config --global pull.rebase false
+
+          git fetch --all
+          echo "::notice::Checking out ${branch}"
+          git checkout --track origin/"${branch}"
+          echo "::notice::Pulling ${{ github.base_ref }} into ${branch}"
+          git pull origin "${{ github.base_ref }}"
+          echo "::notice::Pushing ${branch}"
+          git push origin "${branch}"
+      - id: delete-pr-branch
+        run: |
+          oldBranch="pr-${{ github.event.number }}-project-${{ steps.get-branch-and-id.outputs.branch_name }}"
+          echo "::notice::Seeing if I need to remove ${oldBranch}"
+          BRANCH=$(git ls-remote --heads origin "${oldBranch}")
+          if [[ -n $BRANCH ]]; then
+            echo "::notice::Branch ${oldBranch} exists. Deleting..."
+            git push origin --delete "${oldBranch}"
+          else
+            echo "::notice::It appears that branch ${oldBranch} has already been deleted."
+          fi
+
