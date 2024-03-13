@@ -27,7 +27,7 @@ jobs:
       - id: merge-branches
         if: github.event.pull_request.merged == true
         run: |
-          branch="project-${{ steps.get-branch-and-id.outputs.branch_name }}"
+          branch="${{ steps.get-branch-and-id.outputs.branch_name }}"
           # @todo this identical to what we did in the other workflow. Can we use a reusable workflow here?
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
@@ -42,7 +42,7 @@ jobs:
           git push origin "${branch}"
       - id: delete-pr-branch
         run: |
-          oldBranch="pr-${{ github.event.number }}-project-${{ steps.get-branch-and-id.outputs.branch_name }}"
+          oldBranch="pr-${{ github.event.number }}-${{ steps.get-branch-and-id.outputs.branch_name }}"
           echo "::notice::Seeing if I need to remove ${oldBranch}"
           BRANCH=$(git ls-remote --heads origin "${oldBranch}")
           if [[ -n $BRANCH ]]; then
