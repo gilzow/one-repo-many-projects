@@ -117,7 +117,7 @@ jobs:
         run: |
           # Get our PR environment URL
           prenvurl=$(platform url --primary --pipe --environment "${{ env.new_branch }}" )
-          msg=$(printf "Project: %s\nRelated Branch: %s\nPR Environment URL: %s\n" "${{ env.PLATFORM_PROJECT_ID }}" "${{ env.BRANCH_NAME }}" "${{ steps.get-pr-env-url.outputs.pr_url }}")
+          msg=$(printf "Project: %s\nRelated Branch: %s\nPR Environment URL: %s\n" "${{ env.PLATFORM_PROJECT_ID }}" "${{ env.BRANCH_NAME }}" "${prenvurl}")
           # @todo we should only make a comment if a comment doesnt already exist. But how do we track that?
           gh pr comment "${{ github.event.number }}" --body "${msg}"
       - id: no-comment-needed
