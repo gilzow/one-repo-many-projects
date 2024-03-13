@@ -22,6 +22,7 @@ jobs:
   create_multi_prs:
     permissions:
       contents: write
+      pull-requests: write
     env:
       PLATFORMSH_CLI_TOKEN: ${{ secrets.PSH_TOKEN }}
     runs-on: ubuntu-latest
@@ -104,16 +105,24 @@ jobs:
             echo "::notice::Activating environment ${{ env.new_branch }}"
             platform environment:activate -e "${{ env.new_branch }}"
           fi
-      - id: get-pr-env-url
-        run: |
-          prenvurl=$(platform url --primary --pipe --environment "${{ env.new_branch }}" )
-          echo "pr_url=${prenvurl}" >> $GITHUB_OUTPUT
+      - id: do-we-need-to-comment
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.number }}
+          body-includes: "Project: ${{ env.PLATFORM_PROJECT_ID }}"
       - id: save-comment
+        if: steps.do-we-need-to-comment.outputs.comment-id == ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          msg=$(printf "The PR environment for project %s/%s is %s" "${{ env.BRANCH_NAME }}" "${{ env.PLATFORM_PROJECT_ID }}" "${{ steps.get-pr-env-url.outputs.pr_url }}")
+          # Get our PR environment URL
+          prenvurl=$(platform url --primary --pipe --environment "${{ env.new_branch }}" )
+          msg=$(printf "Project: %s\nRelated Branch: %s\nPR Environment URL: %s\n" "${{ env.PLATFORM_PROJECT_ID }}" "${{ env.BRANCH_NAME }}" "${{ steps.get-pr-env-url.outputs.pr_url }}")
+          # @todo we should only make a comment if a comment doesnt already exist. But how do we track that?
           gh pr comment "${{ github.event.number }}" --body "${msg}"
-
+      - id: no-comment-needed
+        if: steps.do-we-need-to-comment.outputs.comment-id != ''
+        run: |
+          echo "::notice::Comment already created for branch ${{ env.new_branch }} for PR ${{ github.event.number }}"
 
 
