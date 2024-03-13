@@ -30,22 +30,17 @@ jobs:
       matrix:
         projects: ["a-35wvtmrwghmps", "b-mtvdchuoitkcw", "c-gpng2oj2s22ey"]
     steps:
-      - id: get-branch-and-id
-        run: |
-          echo "I'm evaluating ${{ matrix.projects }}"
-          projectPattern='^([a-zA-Z]+)-([a-z0-9]+)$'
-          if [[ "${{ matrix.projects }}" =~ $projectPattern ]]; then
-            branchID="${BASH_REMATCH[1]}";
-            projID="${BASH_REMATCH[2]}";
-            printf "The branch is project-%s and the project is %s.\n" "${branchID}" "${projID}"
-            echo "PLATFORM_PROJECT_ID=${projID}" >> $GITHUB_ENV
-            echo "BRANCH_NAME=project-${branchID}" >> $GITHUB_ENV
-          else
-            echo "I couldn't parse the value to find the branch and project."
-            exit 1
-          fi
       - id: checkout-branch
         uses: actions/checkout@v4
+      - id: get-branch-and-id
+        uses: ./.github/actions/branch-project
+        with:
+          ident: ${{ matrix.projects }}
+      - id: set-env-vars
+        run: |
+          # this is mostly cuz i'd rather use env.property vs steps.some-id.outputs.property over and over and over again
+          echo "BRANCH_NAME=${{ steps.get-branch-and-id.outputs.branch_name }}" >> $GITHUB_ENV
+          echo "PLATFORM_PROJECT_ID=${{ steps.get-branch-and-id.outputs.projectid }}" >> $GITHUB_ENV
       - id: set-git-config
         run: |
           git config --global user.email "action@github.com"
