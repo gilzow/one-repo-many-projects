@@ -4,6 +4,10 @@ inputs:
   ident:
     required: true
     description: The string containing the branch ID and project ID
+  project_prefix:
+    description: "the prefix added to each branch identifier. Defaults to 'project'"
+    required: false
+    default: "project"
 outputs:
   branch_name:
     description: "Parsed branch name"
@@ -11,6 +15,7 @@ outputs:
   projectid:
     description: "Parsed project id"
     value: ${{ steps.parse.outputs.projectid }}
+
 runs:
   using: composite
   steps:
@@ -24,7 +29,7 @@ runs:
           projID="${BASH_REMATCH[2]}";
           printf "The branch is project-%s and the project is %s.\n" "${branchID}" "${projID}"
           echo "projectid=${projID}" >> $GITHUB_OUTPUT
-          echo "branch_name=project-${branchID}" >> $GITHUB_OUTPUT
+          echo "branch_name=${{ inputs.project_prefix }}-${branchID}" >> $GITHUB_OUTPUT
         else
           echo "I couldn't parse the value to find the branch and project."
           exit 1
