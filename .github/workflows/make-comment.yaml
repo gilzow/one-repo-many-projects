@@ -1,0 +1,17 @@
+on: workflow_dispatch
+
+jobs:
+  write_comment:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - id: save-comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          currenttime=$(date)
+          msg=$(printf "The PR environment for project is %s" "${currenttime}")
+          gh pr comment 10 --body "${msg}"
