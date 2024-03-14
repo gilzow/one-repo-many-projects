@@ -21,6 +21,8 @@ jobs:
     steps:
       - id: checkout-branch
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - id: get-branch-and-id
         uses: ./.github/actions/branch-project
         with:
