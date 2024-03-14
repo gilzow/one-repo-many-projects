@@ -1,6 +1,6 @@
 <!-- tenfootpole -->
 <!-- nofunatall -->
-<!-- rufio -->
+
 # WordPress (Composer) for Platform.sh
 
 <p align="center">
