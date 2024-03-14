@@ -13,6 +13,7 @@ jobs:
       contents: write
     env:
       PLATFORMSH_CLI_TOKEN: ${{ secrets.PSH_TOKEN }}
+      GIT_MERGE_AUTOEDIT: no
     runs-on: ubuntu-latest
     strategy:
       matrix:
