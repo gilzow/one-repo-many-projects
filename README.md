@@ -1,5 +1,6 @@
 <!-- tenfootpole -->
 <!-- nofunatall -->
+<!-- ballyhoo! -->
 
 # WordPress (Composer) for Platform.sh
 
